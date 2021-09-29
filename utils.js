@@ -22,7 +22,44 @@ exports.parseSetArgs = function (args) {
 exports.parseGetArgs = function (args) {
   const parsedArgs = this.parseArgs(args);
   if (parsedArgs.length !== 1) throw Error;
-  return parsedArgs[0];
+  return { key: parsedArgs[0] };
+};
+
+exports.parseLLenArgs = function (args) {
+  const parsedArgs = this.parseArgs(args);
+  if (parsedArgs.length !== 1) throw Error;
+  return { key: parsedArgs[0] };
+};
+
+exports.parseRPushArgs = function (args) {
+  const parsedArgs = this.parseArgs(args);
+  if (parsedArgs.length <= 1) throw Error;
+  return {
+    key: parsedArgs[0],
+    values: parsedArgs.slice(1),
+  };
+};
+
+exports.parseRPopArgs = function (args) {
+  const parsedArgs = this.parseArgs(args);
+  if (parsedArgs.length !== 1) throw Error;
+  return { key: parsedArgs[0] };
+};
+
+exports.parseLPopArgs = function (args) {
+  const parsedArgs = this.parseArgs(args);
+  if (parsedArgs.length !== 1) throw Error;
+  return { key: parsedArgs[0] };
+};
+
+exports.parseLRangeArgs = function (args) {
+  const parsedArgs = this.parseArgs(args);
+  if (parsedArgs.length !== 3) throw Error;
+  return {
+    key: parsedArgs[0],
+    start: parsedArgs[1],
+    end: parsedArgs[2],
+  };
 };
 
 exports.parseArgs = function (argsString) {
