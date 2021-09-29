@@ -18,7 +18,6 @@ app.use(express.static(path.join(__dirname, "client/build")));
 
 app.post("/", (req, res) => {
   const result = handleRequest(req);
-  console.log(`result`, result);
   res.send({ data: result });
 });
 
@@ -38,6 +37,7 @@ function handleRequest(req) {
     const { command, args: argsString } = result;
 
     switch (command.toLowerCase()) {
+      // String GET, SET
       case "get": {
         const { key } = utils.parseGetArgs(argsString);
         return ledis.get(key) || "(nil)";
@@ -46,6 +46,7 @@ function handleRequest(req) {
         const { key, value } = utils.parseSetArgs(argsString);
         return ledis.set(key, value);
       }
+      // List LLEN, RPUSH, RPOP, LPOP, LRANGE
       case "llen": {
         const { key } = utils.parseLLenArgs(argsString);
         return ledis.llen(key);
@@ -66,11 +67,45 @@ function handleRequest(req) {
         const { key, start, end } = utils.parseLRangeArgs(argsString);
         return ledis.lrange(key, start, end);
       }
+      // Set SADD, SREM, SMEMBERS, SINTER
+      case "sadd": {
+        const { key, values } = utils.parseSAddArgs(argsString);
+        return ledis.sadd(key, values);
+      }
+      case "srem": {
+        const { key, values } = utils.parseSRemArgs(argsString);
+        return ledis.srem(key, values);
+      }
+      case "smembers": {
+        const { key } = utils.parseSMembersArgs(argsString);
+        return ledis.smembers(key);
+      }
+      case "sinter": {
+        const { keys } = utils.parseSInterArgs(argsString);
+        return ledis.sinter(keys);
+      }
+      // Data Expiration KEYS, DEL, EXPIRE, TTL
+      case "keys": {
+        return ledis.keys();
+      }
+      case "del": {
+        const { key } = utils.parseDelArgs(argsString);
+        return ledis.del(key);
+      }
+      case "expire": {
+        const { key, seconds } = utils.parseExpireArgs(argsString);
+        return ledis.expire(key, seconds);
+      }
+      case "ttl": {
+        const { key } = utils.parseTtlArgs(argsString);
+        return ledis.ttl(key);
+      }
       default:
         console.log("unhandled command");
         return "ERROR";
     }
   } catch (error) {
+    console.log(`error`, error);
     return "ERROR";
   }
 }
