@@ -21,9 +21,7 @@ app.post("/", (req, res) => {
   res.send({ data: result });
 });
 
-// The "catchall" handler: for any request that doesn't
-// match one above, send back React's index.html file.
-app.get("*", (req, res) => {
+app.get("/", (req, res) => {
   // eslint-disable-next-line no-undef
   res.sendFile(path.join(__dirname + "/client/build/index.html"));
 });
@@ -100,9 +98,19 @@ function handleRequest(req) {
         const { key } = utils.parseTtlArgs(argsString);
         return ledis.ttl(key);
       }
+      // Snapshot Save, Restore
+      case "save": {
+        return ledis.save();
+      }
+      case "restore": {
+        return ledis.restore();
+      }
+      // Bonus: Flushall
+      case "flushall": {
+        return ledis.flushall();
+      }
       default:
-        console.log("unhandled command");
-        return "ERROR";
+        return "ERROR: unhandled command";
     }
   } catch (error) {
     console.log(`error`, error);

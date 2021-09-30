@@ -1,3 +1,5 @@
+const fs = require("fs");
+
 var stores = {};
 var expire = {};
 
@@ -18,12 +20,12 @@ exports.set = function (key, value) {
 // List
 exports.llen = function (key) {
   if (!this.has(key)) {
-    return 0;
+    return "(integer) 0";
   }
 
   const list = this.get(key);
   if (!Array.isArray(list)) {
-    return false;
+    return "ERROR: WRONGTYPE Operation against a key holding the wrong kind of value";
   }
 
   return list.length;
@@ -35,27 +37,31 @@ exports.rpush = function (key, values) {
   }
 
   const list = this.get(key);
-  if (!Array.isArray(values) || !Array.isArray(list)) {
-    return false;
+  if (!Array.isArray(values)) {
+    return "ERROR: unsupported argument";
+  }
+
+  if (!Array.isArray(list)) {
+    return "ERROR: WRONGTYPE Operation against a key holding the wrong kind of value";
   }
 
   list.push(...values);
   this.set(key, list);
-  return list.length;
+  return `(integer) ${list.length}`;
 };
 
 exports.rpop = function (key) {
   if (!this.has(key)) {
-    return null;
+    return "(nil)";
   }
 
   const list = this.get(key);
   if (!Array.isArray(list)) {
-    return false;
+    return "ERROR: WRONGTYPE Operation against a key holding the wrong kind of value";
   }
 
   if (list.length == 0) {
-    return null;
+    return "(nil)";
   }
 
   return list.pop();
@@ -68,11 +74,11 @@ exports.lpop = function (key) {
 
   const list = this.get(key);
   if (!Array.isArray(list)) {
-    return false;
+    return "ERROR: WRONGTYPE Operation against a key holding the wrong kind of value";
   }
 
   if (list.length == 0) {
-    return null;
+    return "(nil)";
   }
 
   return list.shift();
@@ -80,14 +86,14 @@ exports.lpop = function (key) {
 
 exports.lrange = function (key, start, end) {
   if (!this.has(key)) {
-    return null;
+    return "(empty array)";
   }
   const list = this.get(key);
 
   // Redis actually accept negative "end" value
   // But for the requirement and simplicity, we just require non-negative value
   if (!list || !Array.isArray(list) || start < 0 || end < 0) {
-    return null;
+    return "ERROR";
   }
 
   const startInt = parseInt(start);
@@ -107,7 +113,7 @@ exports.sadd = function (key, values) {
   }
 
   if (!isSet(set)) {
-    return "ERROR";
+    return "ERROR: WRONGTYPE Operation against a key holding the wrong kind of value";
   }
 
   let addedValues = 0;
@@ -126,7 +132,7 @@ exports.srem = function (key, values) {
   const set = this.get(key);
 
   if (!isSet(set)) {
-    return false;
+    return "ERROR: WRONGTYPE Operation against a key holding the wrong kind of value";
   }
 
   let removedValues = 0;
@@ -147,14 +153,11 @@ exports.smembers = function (key) {
   }
 
   if (!isSet(set)) {
-    return false;
+    return "ERROR: WRONGTYPE Operation against a key holding the wrong kind of value";
   }
 
   // Format response
-  const formattedResult = Object.keys(set).map(function (item, index) {
-    return `${index + 1}) "${item}"`;
-  });
-  return formattedResult;
+  return formatArrayResponse(Object.keys(set));
 };
 
 exports.sinter = function (keys) {
@@ -169,7 +172,7 @@ exports.sinter = function (keys) {
       set = {};
     }
     if (!isSet(set)) {
-      return "(error) WRONGTYPE Operation against a key holding the wrong kind of value";
+      return "ERROR: WRONGTYPE Operation against a key holding the wrong kind of value";
     }
     if (Object.keys(set).length === 0) {
       return "(empty array)";
@@ -247,6 +250,32 @@ exports.ttl = function (key) {
   }
 
   return `"(integer) ${expire[key].timeout}"`;
+};
+
+// Redis has dump.rdb as default file name, for Ledis we'll use dump.ldb
+const dumpFile = "dump.ldb";
+
+exports.save = function () {
+  const data = JSON.stringify(stores);
+  fs.writeFileSync(dumpFile, data);
+  return "OK";
+};
+
+exports.restore = function () {
+  try {
+    const rawData = fs.readFileSync(dumpFile);
+    stores = JSON.parse(rawData);
+    return "OK";
+  } catch (error) {
+    return "ERROR: no dump file";
+  }
+};
+
+// Bonus: Flushall
+exports.flushall = function () {
+  stores = {};
+
+  return "OK";
 };
 
 // utils

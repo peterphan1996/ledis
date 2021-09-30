@@ -1,7 +1,7 @@
 const regex = /(\w+)\s(.+)/;
 
 function filterNonArgCommand(command) {
-  return ["keys", "save", "restore"].includes(command);
+  return ["keys", "save", "restore", "flushall"].includes(command);
 }
 
 exports.parseCommand = function (command) {
